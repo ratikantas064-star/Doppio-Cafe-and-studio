@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DOPPIO — Cafe &amp; Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;800;900&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{--bg:#14100c;--bg2:#1c1610;--bg3:#0e0b08;--c:#c8873a;--cl:#e6b06a;--iv:#f5ece0;--sans:'Inter',system-ui,sans-serif;--serif:'Playfair Display',Georgia,serif;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:64px}
+body{margin:0;background:var(--bg);color:var(--iv);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3,p{margin:0}a{color:inherit;text-decoration:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:90;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+:focus-visible{outline:2px solid var(--cl);outline-offset:3px}
+/* preloader */
+#pre{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s,visibility .8s}
+#pre.off{opacity:0;visibility:hidden}
+#pre p.w{font:700 clamp(2.6rem,8vw,5rem)/1 var(--serif);letter-spacing:.4em;padding-left:.4em;background:linear-gradient(110deg,#fff 30%,var(--cl) 50%,#fff 70%) 0 0/200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh 2.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+#pre small{margin-top:14px;font-size:9px;letter-spacing:.55em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+#pre .bar{width:180px;height:2px;background:rgba(255,255,255,.12);margin-top:40px;overflow:hidden}
+#pre .bar i{display:block;height:100%;background:var(--c);transform-origin:left;animation:pb 1.6s ease forwards}
+@keyframes pb{from{transform:scaleX(0)}}
+/* nav */
+nav{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:14px clamp(20px,4vw,56px);background:rgba(20,16,12,.82);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.06)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand b{display:grid;place-items:center;width:32px;height:32px;background:var(--c);border-radius:6px;font-weight:800;font-size:14px}
+.brand span{font-weight:700;letter-spacing:.1em}.brand em{font-style:normal;font-size:9px;letter-spacing:.2em;color:#b9a58c;margin-left:8px;text-transform:uppercase}
+nav ul{display:flex;gap:30px;list-style:none;margin:0;padding:0}
+nav ul a{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,236,224,.6);font-weight:500}nav ul a:hover{color:#fff}
+.btn{display:inline-block;background:var(--c);color:#fff;border:0;border-radius:6px;padding:12px 28px;font:700 10px var(--sans);letter-spacing:.22em;text-transform:uppercase;cursor:pointer;box-shadow:0 4px 24px rgba(200,135,58,.4)}
+.btn.g{background:rgba(255,255,255,.06);border:1px solid rgba(245,236,224,.2);box-shadow:none;backdrop-filter:blur(10px)}
+@media(max-width:760px){nav ul,nav .btn{display:none}.brand em{display:none}}
+/* scroll scenes (the 3D canvas shows through these) */
+.scene{position:relative;z-index:1}
+.stick{position:sticky;top:0;height:100vh;overflow:hidden}
+.shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(to right,rgba(0,0,0,.45),transparent 70%),linear-gradient(to top,rgba(0,0,0,.35),transparent 35%)}
+.hero-t{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;padding:80px 48% 0 6vw;z-index:2}
+.lab{display:flex;align-items:center;gap:12px;margin-bottom:24px;color:var(--cl);font-size:9px;letter-spacing:.38em;text-transform:uppercase}
+.lab::before{content:"";width:28px;height:1px;background:var(--cl)}
+.hero-t h1{font-weight:800;font-size:clamp(1.8rem,3.6vw,3.2rem);line-height:1.08;letter-spacing:-.03em;text-transform:uppercase;text-shadow:0 2px 40px rgba(0,0,0,.6)}
+.hero-t h1 span{color:var(--cl)}
+.rule{width:48px;height:2px;background:var(--c);margin:22px 0}
+.hero-t p{color:rgba(245,236,224,.65);font-size:.85rem;line-height:1.85;max-width:340px;margin-bottom:30px}
+.row{display:flex;gap:12px;flex-wrap:wrap}
+.story{position:absolute;bottom:14%;max-width:330px;z-index:3;opacity:0;transform:translateY(14px);transition:.6s;pointer-events:none}
+.story.on{opacity:1;transform:none}
+.story.r{right:5vw;text-align:right}.story.l{left:5vw}
+.story h4{margin:0 0 12px;color:var(--cl);font-size:9px;letter-spacing:.32em;text-transform:uppercase;font-weight:600}
+.story p{font-size:clamp(1rem,1.5vw,1.25rem);font-weight:600;line-height:1.55;text-shadow:0 2px 20px rgba(0,0,0,.7)}
+.story big{display:block;font:800 clamp(1.6rem,3vw,2.6rem)/1.05 var(--sans);letter-spacing:-.03em;margin-bottom:12px;white-space:pre-line}
+.tag{position:absolute;top:84px;left:0;right:0;text-align:center;font-size:9px;letter-spacing:.42em;text-transform:uppercase;color:rgba(255,255,255,.55);z-index:3}
+@media(max-width:760px){.hero-t{padding-right:6vw;justify-content:flex-end;padding-bottom:12vh}.story{bottom:10%;max-width:none;left:6vw!important;right:6vw!important;text-align:left!important}}
+/* ticker */
+.tick{position:fixed;bottom:0;left:0;right:0;z-index:40;height:34px;background:var(--c);overflow:hidden;display:flex;align-items:center;padding-bottom:env(safe-area-inset-bottom,0px)}
+.tick div{display:inline-flex;white-space:nowrap;animation:tk 32s linear infinite}
+.tick span{font-size:10px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;padding-right:80px}
+@keyframes tk{to{transform:translateX(-50%)}}
+/* panels */
+.panel{position:relative;z-index:1;padding:90px clamp(20px,4.5vw,56px)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:34px}
+.head .k{font-size:9px;font-weight:600;letter-spacing:.35em;text-transform:uppercase;margin-bottom:10px}
+.head h2{font-weight:800;font-size:clamp(1.8rem,3.5vw,2.8rem);line-height:1.1;letter-spacing:-.02em}
+.head p{font-size:.82rem;line-height:1.8;max-width:310px}
+.light{background:#fff;color:#14100c}.light .k{color:var(--c)}.light .head p{color:rgba(20,16,12,.5)}
+.gold{background:var(--c)}.gold .k,.gold .head p{color:rgba(255,255,255,.75)}
+.dark2{background:var(--bg)}.dark2 .k{color:var(--cl)}.dark2 .head p{color:rgba(245,236,224,.45)}
+.dark3{background:var(--bg3)}.dark3 .k{color:var(--cl)}.dark3 .head p{color:rgba(235,220,200,.4)}
+/* tilt cards */
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;perspective:1100px}
+.tc{position:relative;aspect-ratio:3/4;border-radius:20px;overflow:hidden;padding:22px;display:flex;flex-direction:column;justify-content:flex-end;transform-style:preserve-3d;transition:transform .15s ease-out;color:#fff}
+.tc::after{content:"";position:absolute;inset:0;background:radial-gradient(circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.16),transparent 60%);pointer-events:none}
+.tc small{font-size:9px;letter-spacing:.3em;text-transform:uppercase;opacity:.8}
+.tc h3{font-size:1.5rem;font-weight:800;line-height:1.1;margin:8px 0;white-space:pre-line;letter-spacing:-.02em}
+.tc p{font-size:.78rem;line-height:1.6;opacity:.85}
+.tc b{margin-top:14px;font-size:.85rem}
+.g1{background:linear-gradient(160deg,#6b3a1d,#2b1a12)}.g2{background:linear-gradient(160deg,#c8873a,#7a4a1c)}.g3{background:linear-gradient(160deg,#3a2c1f,#14100c)}.g4{background:linear-gradient(160deg,#8a3b2a,#2b1410)}
+@media(max-width:900px){.cards{grid-template-columns:1fr 1fr}}@media(max-width:520px){.cards{grid-template-columns:1fr}.tc{aspect-ratio:4/3}}
+/* gallery */
+.gal{display:grid;grid-template-columns:1.2fr 1fr 1fr 1fr;grid-template-rows:200px 200px;gap:14px}
+.gal div{border-radius:16px;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;background:rgba(20,16,12,.28);transition:background .3s}
+.gal div:hover{background:rgba(20,16,12,.5)}.gal div:first-child{grid-row:1/3}
+.gal h3{font-size:1.1rem;font-weight:800}.gal p{font-size:.75rem;opacity:.75;margin-top:4px;line-height:1.5}
+@media(max-width:800px){.gal{grid-template-columns:1fr 1fr;grid-template-rows:none;grid-auto-rows:170px}.gal div:first-child{grid-row:auto}}
+/* marquee */
+.mq{overflow:hidden}.mq div{display:flex;gap:14px;width:max-content;animation:tk 38s linear infinite}
+.mq span{width:300px;height:210px;border-radius:18px;flex-shrink:0;display:flex;align-items:flex-end;padding:18px;font-weight:800;font-size:1.1rem;letter-spacing:-.02em}
+/* bento */
+.bento{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:190px;gap:14px}
+.bento div{border-radius:18px;padding:20px;display:flex;flex-direction:column;justify-content:flex-end;border:1px solid rgba(255,255,255,.06)}
+.bento .w2{grid-column:span 2}.bento .t2{grid-row:span 2}
+.bento h3{font-size:1.15rem;font-weight:800}.bento p{font-size:.78rem;opacity:.7;margin-top:6px;line-height:1.6}
+@media(max-width:800px){.bento{grid-template-columns:1fr 1fr}.bento .w2{grid-column:span 2}}
+/* about */
+.about{max-width:1280px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:center}
+.about h2{font-weight:900;font-size:clamp(2.4rem,4.5vw,3.8rem);line-height:1.05;letter-spacing:-.03em;margin:18px 0 22px}.about h2 span{color:rgba(255,255,255,.35)}
+.about .k{font-size:9px;font-weight:700;letter-spacing:.35em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.about>div>p{color:rgba(255,255,255,.55);font-size:.9rem;line-height:1.85;max-width:440px;margin-bottom:40px}
+.stats{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid rgba(255,255,255,.08);margin-bottom:40px}
+.stats div{padding:22px 0}.stats div:nth-child(odd){border-right:1px solid rgba(255,255,255,.08);padding-right:30px}.stats div:nth-child(even){padding-left:30px}.stats div:nth-child(-n+2){border-bottom:1px solid rgba(255,255,255,.08)}
+.stats b{display:block;font-size:2.2rem;font-weight:900;letter-spacing:-.03em;line-height:1}.stats span{font-size:9px;letter-spacing:.25em;text-transform:uppercase;color:rgba(255,255,255,.4)}
+.btn.w{background:#fff;color:#14100c;box-shadow:none;padding:14px 28px;border-radius:10px}
+.big{perspective:1200px}.big .tc{aspect-ratio:4/5;max-width:440px;margin:0 auto;background:linear-gradient(150deg,#c8873a,#3a2c1f 60%,#14100c);border-radius:28px;box-shadow:0 40px 80px rgba(0,0,0,.5)}
+.glass{background:rgba(255,255,255,.08);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:14px 20px;transform:translateZ(30px)}
+@media(max-width:860px){.about{grid-template-columns:1fr;gap:40px}}
+/* visit */
+.info{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;padding-bottom:50px;border-bottom:1px solid rgba(0,0,0,.1)}
+.info h5{margin:0 0 10px;font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:rgba(0,0,0,.4)}.info p{font-size:.9rem;line-height:1.75}
+.cta{position:relative;border-radius:24px;overflow:hidden;margin-top:40px;min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 22px;background:radial-gradient(ellipse at 30% 20%,#c8873a,#3a2c1f 60%,#14100c);color:#fff}
+.cta small{font-size:10px;letter-spacing:.4em;text-transform:uppercase;opacity:.65;margin-bottom:14px}
+.cta h2{font-weight:900;font-size:clamp(2.2rem,5vw,4rem);letter-spacing:-.03em;line-height:1.05;margin-bottom:12px}
+.cta p{opacity:.7;margin-bottom:28px;font-size:.9rem}
+.cta .btn{background:#fff;color:#14100c;border-radius:10px;padding:14px 36px;box-shadow:none}
+@media(max-width:800px){.info{grid-template-columns:1fr 1fr}}
+footer{position:relative;z-index:1;background:#fff;color:rgba(0,0,0,.5);text-align:center;font-size:.8rem;padding:10px 20px 70px}
+@media(prefers-reduced-motion:reduce){.tick div,.mq div,#pre p.w{animation:none}}
+</style>
+</head>
+<body>
+<div class="grain" aria-hidden="true"></div>
+<div id="pre"><p class="w">DOPPIO</p><small>Cafe &amp; Studio</small><div class="bar"><i></i></div></div>
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<nav>
+  <div class="brand"><b>D</b><div><span>DOPPIO</span><em>Cafe &amp; Studio</em></div></div>
+  <ul><li><a href="#home">Home</a></li><li><a href="#menu">Menu</a></li><li><a href="#studio">Studio</a></li><li><a href="#about">About</a></li><li><a href="#visit">Contact</a></li></ul>
+  <a class="btn" href="#visit">Reserve a table</a>
+</nav>
+
+<!-- Scene 1: hero -->
+<div class="scene" id="home" data-s="0" style="height:500vh">
+  <div class="stick">
+    <div class="shade"></div>
+    <div class="hero-t" id="ht">
+      <div class="lab">Cafe &amp; Studio</div>
+      <h1>Brewed for<br>the <span>Slow Mornings</span></h1>
+      <div class="rule"></div>
+      <p>Specialty coffee, fresh bakes and a creative studio space.<br>Single-origin. Small-batch. Made with care.</p>
+      <div class="row"><a class="btn" href="#visit">Reserve a table</a><a class="btn g" href="#menu">View menu</a></div>
+    </div>
+    <div class="story r" data-a="0.14" data-b="0.30"><h4>The Beans</h4><p>Every cup begins with carefully sourced single-origin beans, roasted in small batches for depth and sweetness.</p></div>
+    <div class="story l" data-a="0.38" data-b="0.54"><h4>The Craft</h4><p>Our baristas dial in every shot by hand — grind, dose and pour — for a double that is smooth, rich and balanced.</p></div>
+    <div class="story r" data-a="0.62" data-b="0.78"><h4>The Kitchen</h4><p>Fresh bakes, brunch plates and desserts made daily in our open kitchen.</p></div>
+    <div class="story l" data-a="0.84" data-b="1.01"><h4>The Studio</h4><p>Beyond the bar, Doppio is a calm creative corner for shoots, workshops and long conversations.</p></div>
+  </div>
+</div>
+
+<div class="tick"><div>
+  <span>⬡ Specialty coffee, roasted in small batches</span><span>⬡ Fresh brunch, bakes &amp; desserts daily</span><span>⬡ Rooftop seating, live music &amp; open-mic nights</span><span>⬡ Creative studio for shoots &amp; workshops</span>
+  <span>⬡ Specialty coffee, roasted in small batches</span><span>⬡ Fresh brunch, bakes &amp; desserts daily</span><span>⬡ Rooftop seating, live music &amp; open-mic nights</span><span>⬡ Creative studio for shoots &amp; workshops</span>
+</div></div>
+
+<section class="panel light" id="menu">
+  <div class="head"><div><p class="k">The Doppio Experience</p><h2>Everything You Need<br>In One Cup</h2></div><p>Hover over each experience to discover what makes Doppio unlike any other cafe in town.</p></div>
+  <div class="cards">
+    <div class="tc g1"><small>Signature Coffee</small><h3>Handcrafted
+Espresso</h3><p>Every double shot pulled by hand — smooth, rich and balanced.</p><b>From ₹120 · per cup</b></div>
+    <div class="tc g2"><small>Fresh Kitchen</small><h3>Brunch &amp;
+Bakes</h3><p>Fresh bakes, brunch plates and desserts made daily.</p><b>From ₹150 · per plate</b></div>
+    <div class="tc g3"><small>The Counter</small><h3>The Barista
+Experience</h3><p>Sit at the bar and watch your coffee come to life.</p><b>From ₹200 · tasting flight</b></div>
+    <div class="tc g4"><small>Evenings</small><h3>Evenings That
+Never End</h3><p>Live music, open-mic nights and handcrafted drinks.</p><b>Free entry · weekends</b></div>
+  </div>
+</section>
+
+<section class="panel gold">
+  <div class="head"><div><p class="k">The Doppio Experience</p><h2>Fresh Drinks &amp; Good Light —<br>Enjoy the Daytime</h2></div><p>Unwind with handcrafted drinks in a sunlit room made for slow afternoons.</p></div>
+  <div class="gal">
+    <div><h3>The Cafe Floor</h3><p>Sunlit seating and a calm room to start your day.</p></div>
+    <div><h3>Signature Drinks</h3><p>Crafted as the evening light settles in.</p></div>
+    <div><h3>Cold Brews &amp; Coolers</h3><p>Cold, bright and made fresh to order.</p></div>
+    <div><h3>The Lounge</h3><p>Sink in and let the world go by.</p></div>
+    <div><h3>Fresh Pours</h3><p>Every cup crafted to perfection.</p></div>
+    <div><h3>Rooftop Seating</h3><p>Open-air views that go on and on.</p></div>
+  </div>
+</section>
+
+<!-- Scene 2: craft -->
+<div class="scene" data-s="1" style="height:450vh">
+  <div class="stick">
+    <div class="shade"></div>
+    <div class="tag">Doppio Craft</div>
+    <div class="story l" data-a="0.02" data-b="0.26"><big>Every Bean
+Has a Story</big><h4>The Roast</h4><p>From farm to roaster to cup — chosen with intention, roasted with patience.</p></div>
+    <div class="story r" data-a="0.30" data-b="0.52"><big>Heat Meets
+Mastery</big><h4>The Brew</h4><p>Thousands of pulled shots shaped our technique: pressure, temperature and timing.</p></div>
+    <div class="story l" data-a="0.56" data-b="0.78"><big>Comfort
+Down to Detail</big><h4>The Ambience</h4><p>Hand-picked furniture, warm lighting and soft music, tuned to every hour of the day.</p></div>
+    <div class="story r" data-a="0.82" data-b="1.01"><big>Ready for
+Your Cup</big><h4>The Pour</h4><p>Hot, balanced and exactly the way you like it.</p></div>
+  </div>
+</div>
+
+<section class="panel dark2">
+  <div class="head"><div><p class="k">From Our Kitchen</p><h2>Fresh From Our Kitchen</h2></div><p>Brunch plates, bakes and desserts crafted fresh every day — served warm.</p></div>
+  <div class="mq"><div id="mq"></div></div>
+</section>
+
+<section class="panel dark3">
+  <div class="head"><div><p class="k">The Doppio Experience</p><h2 style="font-weight:900;font-size:clamp(2rem,4vw,3.2rem)">The Night Is Yours</h2></div><p>Live sets, rooftop evenings, open-mic nights and curated drinks — every night at Doppio is an event.</p></div>
+  <div class="bento">
+    <div class="w2 t2" style="background:linear-gradient(150deg,#5a3418,#1c1610)"><h3>Live Sets</h3><p>Live music and DJ evenings that turn Doppio into the best room in town.</p></div>
+    <div style="background:#271e15"><h3>Drinks With A View</h3><p>Crafted drinks served where the evening never ends.</p></div>
+    <div style="background:#3a2c1f"><h3>Open Floor</h3><p>Room to move, laugh and linger.</p></div>
+    <div class="w2" style="background:linear-gradient(120deg,#7a4a1c,#271e15)"><h3>Music Corner</h3><p>Live saxophone, jazz sessions and acoustic sets.</p></div>
+    <div style="background:#1c1610"><h3>Golden Hour</h3><p>Every corner frames a good photograph.</p></div>
+    <div style="background:#3a2c1f"><h3>Signature Menu</h3><p>Bespoke drinks by our baristas.</p></div>
+    <div class="w2" style="background:linear-gradient(120deg,#271e15,#8a5a1f)"><h3>Rooftop Lounge</h3><p>Golden hour drinks as the sun slips below the skyline.</p></div>
+  </div>
+</section>
+
+<section class="panel" id="about" style="background:#14100c">
+  <div class="about">
+    <div>
+      <p class="k">Why Visit DOPPIO</p>
+      <h2>The Coffee<br><span>Is Our Craft.</span></h2>
+      <p>DOPPIO is where coffee becomes a ritual. From a perfectly pulled double espresso to a slow weekend brunch and a creative studio in the back — every moment is crafted to feel warm and unhurried. This is not just a cafe. This is a place to belong.</p>
+      <div class="stats"><div><b>40+</b><span>Coffee &amp; Drinks</span></div><div><b>3</b><span>Years Brewing</span></div><div><b>98%</b><span>Happy Guests</span></div><div><b>5★</b><span>Guest Rating</span></div></div>
+      <a class="btn w" href="#menu">Explore Menu ›</a>
+    </div>
+    <div class="big"><div class="tc" style="padding:26px"><div class="glass" style="align-self:flex-start;margin-top:auto"><b style="font-size:1rem">Specialty Coffee · Fresh Bakes</b><div style="font-size:8px;letter-spacing:.22em;text-transform:uppercase;opacity:.5;margin-top:4px">Cafe &amp; Creative Studio</div></div></div></div>
+  </div>
+</section>
+
+<!-- Scene 3: life -->
+<div class="scene" id="studio" data-s="2" style="height:450vh">
+  <div class="stick">
+    <div class="shade"></div>
+    <div class="tag">The Doppio Experience</div>
+    <div class="story l" data-a="0.02" data-b="0.26"><big>Where the
+Morning Begins</big><h4>First Sip</h4><p>Every great day starts with the aroma of fresh espresso and a seat by the window.</p></div>
+    <div class="story r" data-a="0.30" data-b="0.52"><big>A World
+Within a Cafe</big><h4>Life At Doppio</h4><p>From sunrise coffee to late-evening jam sessions, every hour feels a little more special.</p></div>
+    <div class="story l" data-a="0.56" data-b="0.78"><big>Warm Rooms,
+Good People</big><h4>The Experience</h4><p>Thoughtful menu, warm interiors, and a team that remembers how you like your coffee.</p></div>
+    <div class="story r" data-a="0.82" data-b="1.01"><big>Made Around
+Your Moment</big><h4>Your Space</h4><p>Book the studio for a shoot, a launch or a workshop. From ₹800 per hour.</p></div>
+  </div>
+</div>
+
+<section class="panel light" id="visit">
+  <div class="info">
+    <div><h5>Opening Hours</h5><p>Open daily<br>8:00 AM – 11:00 PM<br>Studio bookings available</p></div>
+    <div><h5>Find Us</h5><p>Doppio Cafe &amp; Studio<br>Add your street address<br>City, Odisha</p></div>
+    <div><h5>Reservations</h5><p>+91 00000 00000<br>hello@doppio.in</p></div>
+    <div><h5>The Studio</h5><p style="color:rgba(0,0,0,.5)">Photo shoots, product shoots, workshops and small events. Ask for studio rates.</p></div>
+  </div>
+  <div class="cta"><small>Visit Us</small><h2>Come Sit With DOPPIO</h2><p>Reserve your table or book the studio — we’ll keep the coffee warm.</p><a class="btn" id="wa" href="#">Reserve on WhatsApp</a></div>
+</section>
+<footer>© Doppio Cafe &amp; Studio · Come for the coffee, stay for the light.</footer>
+
+<script>
+/* marquee tiles */
+const dish=[["Butter croissant","#6b3a1d"],["Avocado toast","#3a4a2a"],["Pancake stack","#8a5a1f"],["Brownie","#2b1a12"],["Banana bread","#7a4a1c"],["Cheesecake","#8a3b2a"],["Egg bowl","#3a2c1f"],["Grilled sandwich","#5a3418"]];
+document.getElementById('mq').innerHTML=[...dish,...dish].map(d=>`<span style="background:linear-gradient(160deg,${d[1]},#14100c)">${d[0]}</span>`).join('');
+document.getElementById('wa').href='https://wa.me/910000000000?text='+encodeURIComponent('Hi Doppio, I would like to reserve a table.');
+
+/* tilt */
+document.querySelectorAll('.tc').forEach(c=>{
+  c.addEventListener('pointermove',e=>{const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    c.style.transform=`rotateX(${(.5-y)*14}deg) rotateY(${(x-.5)*14}deg) scale3d(1.02,1.02,1.02)`;c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%')});
+  c.addEventListener('pointerleave',()=>c.style.transform='');
+});
+
+/* preloader */
+addEventListener('load',()=>setTimeout(()=>document.getElementById('pre').classList.add('off'),1700));
+setTimeout(()=>document.getElementById('pre').classList.add('off'),3500);
+
+/* ===== three.js scene: espresso cup, steam, beans ===== */
+const cv=document.getElementById('gl');
+if(window.THREE){
+const R=new THREE.WebGLRenderer({canvas:cv,antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));
+const S=new THREE.Scene(),C=new THREE.PerspectiveCamera(38,1,.1,100);
+S.add(new THREE.AmbientLight(0xffe6c8,.55));
+const key=new THREE.DirectionalLight(0xffd9a0,1.5);key.position.set(4,6,5);S.add(key);
+const rim=new THREE.PointLight(0xe6b06a,1.6,30);rim.position.set(-5,3,-3);S.add(rim);
+const mat=(c,r,m)=>new THREE.MeshStandardMaterial({color:c,roughness:r,metalness:m||0,side:THREE.DoubleSide});
+const cup=new THREE.Group();S.add(cup);
+const prof=[[0,0],[.75,0],[.95,.18],[1.25,.9],[1.4,1.55],[1.34,1.55],[1.2,.95],[.9,.28],[0,.22]].map(p=>new THREE.Vector2(p[0],p[1]));
+const body=new THREE.Mesh(new THREE.LatheGeometry(prof,64),mat(0xf5ece0,.25));cup.add(body);
+const h=new THREE.Mesh(new THREE.TorusGeometry(.5,.1,16,32,Math.PI*1.25),mat(0xf5ece0,.25));h.position.set(1.28,.95,0);h.rotation.z=-Math.PI*.62;cup.add(h);
+const sau=new THREE.Mesh(new THREE.LatheGeometry([[0,-.12],[2.1,-.12],[2.4,.02],[2.35,.06],[1.9,-.02],[0,-.02]].map(p=>new THREE.Vector2(p[0],p[1])),64),mat(0xf5ece0,.3));cup.add(sau);
+const cof=new THREE.Mesh(new THREE.CircleGeometry(1.28,48),mat(0x3a1d0e,.2));cof.rotation.x=-Math.PI/2;cup.add(cof);
+const cre=new THREE.Mesh(new THREE.RingGeometry(.02,1.28,48),new THREE.MeshStandardMaterial({color:0xc8873a,roughness:.4,transparent:true,opacity:.75}));cre.rotation.x=-Math.PI/2;cup.add(cre);
+// beans
+const beans=new THREE.Group();S.add(beans);const bg=new THREE.SphereGeometry(.16,14,10);bg.scale(1,.65,.7);
+for(let i=0;i<46;i++){const b=new THREE.Mesh(bg,mat(0x4a2a17,.5));const a=Math.random()*6.28,r=2.6+Math.random()*2.4;
+  b.position.set(Math.cos(a)*r,-.1+Math.random()*3.6,Math.sin(a)*r-1);b.rotation.set(Math.random()*6,Math.random()*6,0);b.userData={a,r,y:b.position.y,s:.2+Math.random()*.4};beans.add(b)}
+// steam
+const N=90,sp=new Float32Array(N*3),sd=[];for(let i=0;i<N;i++){sd.push({x:(Math.random()-.5)*1.4,z:(Math.random()-.5)*1.4,t:Math.random(),s:.5+Math.random()*.6})}
+const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));
+const st=new THREE.Points(sg,new THREE.PointsMaterial({color:0xfff1dc,size:.16,transparent:true,opacity:.28,depthWrite:false}));S.add(st);
+
+function size(){const w=innerWidth,hh=innerHeight;R.setSize(w,hh,false);C.aspect=w/hh;C.updateProjectionMatrix()}
+addEventListener('resize',size);size();
+
+/* scroll progress per scene */
+const scenes=[...document.querySelectorAll('.scene')],ease=t=>t*t*(3-2*t);
+let sc={i:-1,p:0};
+function read(){const y=scrollY,vh=innerHeight;sc.i=-1;
+  scenes.forEach(el=>{const t=el.offsetTop,h=el.offsetHeight;if(y>=t-vh&&y<=t+h){sc.i=+el.dataset.s;sc.p=Math.min(1,Math.max(0,(y-t)/(h-vh)));
+    el.querySelectorAll('.story').forEach(s=>s.classList.toggle('on',sc.p>=+s.dataset.a&&sc.p<=+s.dataset.b));
+    const ht=el.querySelector('#ht');if(ht){const o=Math.max(0,1-sc.p/.08);ht.style.opacity=o;ht.style.transform=`translateY(${-40*(1-o)}px)`;ht.style.pointerEvents=o<.2?'none':''}}});
+}
+addEventListener('scroll',read,{passive:true});read();
+const T={x:0,y:3,z:8,ry:0,fill:1,look:1};let cur={x:0,y:3,z:8,ry:0,fill:0};
+const mobile=()=>innerWidth<760;
+const t0=performance.now();
+function frame(){requestAnimationFrame(frame);const t=(performance.now()-t0)/1000,p=sc.p,m=mobile();
+  const off=m?0:2.1; // cup sits right on desktop, text left
+  if(sc.i===0){T.ry=p*Math.PI*3.2;T.fill=Math.min(1,p*3.2);const k=ease(Math.min(1,p*1.2));
+    T.x=0;T.y=3.4-1.6*Math.max(0,p-.75)*4;T.z=m?10.5:9-2.2*k;}
+  else if(sc.i===1){T.ry=-p*Math.PI*2.4;T.fill=1;const o=p*Math.PI*1.1;T.x=Math.sin(o)*4;T.z=Math.cos(o)*4+3.5;T.y=1.6+p*1.8;}
+  else if(sc.i===2){T.ry=p*Math.PI*1.6;T.fill=1;const o=-p*Math.PI*.9;T.x=Math.sin(o)*5;T.z=Math.cos(o)*5+2;T.y=3.2-p*1.4;}
+  else{T.fill=1}
+  cur.x+=(T.x-cur.x)*.06;cur.y+=(T.y-cur.y)*.06;cur.z+=(T.z-cur.z)*.06;cur.ry+=(T.ry-cur.ry)*.08;cur.fill+=(T.fill-cur.fill)*.08;
+  C.position.set(cur.x,cur.y,cur.z);
+  const cx=sc.i===0&&!m?-off*.0:0;cup.position.x=sc.i===0&&!m?off:0;C.lookAt(cup.position.x,.7,0);
+  cup.rotation.y=cur.ry;cup.rotation.z=Math.sin(t*.6)*.015;
+  const ly=.22+cur.fill*.95;cof.position.y=ly;cre.position.y=ly+.01;cof.visible=cre.visible=cur.fill>.02;
+  beans.children.forEach(b=>{const d=b.userData;b.position.y=d.y+Math.sin(t*d.s*3+d.a)*.25;b.rotation.x+=.003;b.rotation.y+=.004});
+  const pos=sg.attributes.position;sd.forEach((q,i)=>{q.t=(q.t+.0035*q.s)%1;pos.setXYZ(i,cup.position.x+q.x*(.3+q.t*.9)+Math.sin(t+i)*.15*q.t,1.3+cur.fill*.3+q.t*2.8,q.z*(.3+q.t*.9))});pos.needsUpdate=true;
+  st.material.opacity=.32*(cur.fill>.2?1:0);
+  cv.style.opacity=sc.i<0?0:1;
+  R.render(S,C)}
+frame();
+}else{cv.remove()}
+</script>
+</body>
+</html>
